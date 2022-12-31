@@ -1,0 +1,177 @@
+---
+title: "Tracking Chinese Foreign Investments, 2005-2018"
+subtitle: "with xaringan"
+author: "Peter Magee"
+date: "2022/05/01"
+output:
+  xaringan::moon_reader
+---
+
+```{r echo=FALSE, include=FALSE}
+library(tidyverse)
+chinese_investment <- read_csv("aei_fdi.csv")
+library(knitr)
+```
+
+#Tracking Chinese Foreign Investments, 2005-2018
+
+- Given constantly shifting geopolitical climates I thought it might be interesting to see where a global power like China chooses to investment its money from 2005-2018.
+
+- Taking data from the American Enterprise Institute, we'll look at the sectors & regions where China focuses its foreign investments.
+
+- Chinese foreign investment trends reveal the broader geopolitical tensions between the USA and China. 
+
+---
+#Tracking China's investment dollars in USA, 2005 - 2018
+.pull-center[
+```{r warning=FALSE}
+investment_order <- c("LOGISTICS", "CHEMICALS", "METALS", "HEALTH", "AGRICULTURE", "ENTERTAINMENT", "OTHER", "TOURISM", "TRANSPORT", "REAL ESTATE", "ENERGY", "TECHNOLOGY", "FINANCE")
+
+USA_by_sector <- chinese_investment %>%
+  filter(countryInvestment == "USA") %>%
+  mutate(amountInvestment = parse_number(amountInvestment)) %>%
+  ggplot(aes(factor(sectorInvestment, level = investment_order), amountInvestment)) +
+  geom_col() +
+  scale_y_continuous(
+    labels = scales::label_dollar(scale = .000000001, largest_with_cents = 0)
+  ) +
+  labs(
+    y = "Investment amounts (Billions, USD)",
+    x = "Sector",
+    title = "How China invested its money in USA, 2005-2018"
+  )
+
+graph_1 <- USA_by_sector + coord_flip()
+```
+]
+
+---
+class: center, middle
+```{r dpi= 320, echo=FALSE, eval=TRUE, warning=FALSE, fig.width=7, fig.height=4}
+graph_1
+```
+---
+
+#What US companies have received the most Chinese money?
+.pull-center[
+```{r warning=FALSE, results = 'hide', message=FALSE, error=TRUE}
+chinese_investment %>%
+  filter(countryInvestment == "USA" & !is.na(nameEntityInvestment)) %>%
+  group_by(nameEntityInvestment) %>%
+  mutate(amountInvestment = parse_number(amountInvestment)) %>%
+  summarise(n = n(), total = amountInvestment / n) %>%
+  arrange(desc(n, total)) %>%
+  mutate(US_company = str_trim(nameEntityInvestment))
+
+companies <- tibble(
+  "Company Name" = c("UNOCAL", "Blackstone", "Citi Group", "Morgan Stanley", "Ingram Micro"),
+  "Total Investment (billions)" = c("$18", "$17.6", "$10.5", "$9.6", "$6.0"),
+  "Sector" = c("Energy", "Finance", "Finance", "Finance", "Technology")
+)
+
+comp_table <- kable(companies,
+  caption = "US companies receiving most Chinese money",
+  align = "c"
+)
+```
+]
+---
+class: middle
+.pull-center[
+```{r dpi= 320, echo=FALSE, eval=TRUE, warning=FALSE, fig.width=7, fig.height=4}
+comp_table
+```
+]
+---
+#What do investments look like by region?
+.pull-center[
+```{r warning=FALSE}
+annum_invest <- function(x) {
+  chinese_investment %>%
+    filter(yearTransaction == x) %>%
+    mutate(amountInvestment = parse_number(amountInvestment)) %>%
+    ggplot(aes(regionInvestment, amountInvestment)) +
+    geom_col() +
+    scale_y_continuous(
+      labels = scales::label_dollar(scale = .000000001, largest_with_cents = 0)
+    ) +
+    labs(
+      y = "Investment amounts (Billions, USD)",
+      x = "Region"
+    ) +
+    scale_fill_manual() +
+    coord_flip()
+}
+```
+]
+---
+#Chinese investments by region, 2005
+.pull-center[
+```{r dpi= 320, echo=FALSE, eval=TRUE, warning=FALSE, fig.width=7, fig.height=4}
+annum_invest("2005")
+```
+]
+---
+#Chinese investments by region, 2012
+.pull-center[
+```{r dpi= 320, echo=FALSE, eval=TRUE, warning=FALSE, fig.width=7, fig.height=4}
+annum_invest("2012")
+```
+]
+---
+#Chinese investments by region, 2018
+.pull-center[
+```{r dpi= 320, echo=FALSE, eval=TRUE, warning=FALSE, fig.width=7, fig.height=4}
+annum_invest("2018")
+```
+]
+---
+#Looking more closely at European investments
+.pull-center[
+```{r}
+country_sector <- function(x, y) {
+  chinese_investment %>%
+    filter(regionInvestment == x | yearTransaction == y) %>%
+    mutate(amountInvestment = parse_number(amountInvestment)) %>%
+    ggplot(aes(amountInvestment, sectorInvestment)) +
+    geom_col() +
+    scale_x_continuous(
+      labels = scales::label_dollar(scale = .000000001, largest_with_cents = 0)
+    ) +
+    labs(
+      y = "Sector",
+      x = "Investment amounts (Billions, USD)"
+    )
+}
+```
+]
+---
+#Investments in Europe by sector, 2005
+.pull-center[
+```{r dpi= 320, echo=FALSE, eval=TRUE, warning=FALSE, fig.width=7, fig.height=4}
+country_sector("EUROPE", "2005")
+```
+]
+---
+#Investments in Europe by sector, 2012
+.pull-center[
+```{r dpi= 320, echo=FALSE, eval=TRUE, warning=FALSE, fig.width=7, fig.height=4}
+country_sector("EUROPE", "2012")
+```
+]
+---
+#Investments in Europe by sector, 2018
+.pull-center[
+```{r dpi= 320, echo=FALSE, eval=TRUE, warning=FALSE, fig.width=7, fig.height=4}
+country_sector("EUROPE", "2018")
+```
+]
+---
+#Thank you!!!
+- Dr. Barrett
+- Michelle Wheatley
+- American University
+- DC NASA Space Grant Consortium 
+
+#Reference:
+Chinese Global Foreign Investment via American Enterprise Institute. (2019, January 18). Tidy Tuesday. https://gist.github.com/abresler/0f82312cd43021887d2998c3fe99fabd
